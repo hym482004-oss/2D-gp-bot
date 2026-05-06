@@ -1,7 +1,7 @@
 import os, re
 from telegram.ext import Application, MessageHandler, filters
 
-TOKEN = os.getenv("TOKEN")
+TOKEN = os.getenv("BOT_TOKEN")
 
 # Bet type to blocks mapping
 BET_TYPES = {
