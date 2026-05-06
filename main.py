@@ -1,37 +1,36 @@
-import os, re
+import os
+import re
 from telegram.ext import Application, MessageHandler, filters
 
-TOKEN = os.environ.get("TOKEN")
+TOKEN = os.getenv("TOKEN")
 
-class Bot:
-    def calc(self, text):
-        b = {'du':7,'laos':7,'mm':10,'glo':3,'me':7,'maxi':7,'dubai':7,'london':7}
-        total, brand, disc = 0, "GP", 0
-        
-        for br, d in b.items():
-            if br in text.lower(): brand, disc = br.upper(), d; break
-        
-        nums = re.findall(r'\d{2}', text)
-        amts = [int(x) for x in re.findall(r'\d{3,4}', text)]
-        
-        for line in text.split('\n'):
-            nline = re.findall(r'\d{2}', line)
-            if len(nline)<1: continue
-            
-            is_r = 'r' in line.lower()
-            if is_r and len(amts)>=2:
-                amt1, amt2 = int(amts[-2]), int(amts[-1])
-            else:
-                amt1 = int(amts[-1]) if amts else 1000
-                amt2 = amt1
-            
-            n = len(nline)
-            if is_r: total += n*amt1 + n*amt2
-            else: total += n*amt1
-        
-        cash = int(total * disc / 100)
-        return total, cash, total-cash, brand, disc
+b = {'du':7,'laos':7,'mm':10,'glo':3,'me':7,'maxi':7,'dubai':7,'london':7}
 
-bot = Bot()
+async def calc(update, context):
+    text = update.message.text.lower()
+    total, brand, disc = 0, "GP", 0
+    
+    for br, d in b.items():
+        if br in text: brand, disc = br.upper(), d; break
+    
+    nums = re.findall(r'\d{2}', update.message.text)
+    amts = [int(x) for x in re.findall(r'\d{3,4}', update.message.text)]
+    
+    n = len(nums)
+    if 'r' in text and len(amts)>=2:
+        total = n*amts[-2] + n*amts[-1]
+    else:
+        total = n * (amts[-1] if amts else 1000)
+    
+    cash = int(total * disc / 100)
+    u = update.from_user.first_name[:8]
+    
+    await update.message.reply_text(
+        f"👤**{u}**\n✅**{brand}**\n━━━━━━━━\n💰**{total:,}**\n📉**{disc}%**:{cash:,}\n━━━━━━━━\n💵**{total-cash:,}** ဘဲလွဲ\n🎰",
+        parse_mode='Markdown'
+    )
 
-async def calc(update,
+app = Application.builder().token(TOKEN).build()
+app.add_handler(MessageHandler(filters.TEXT, calc))
+print("Bot started")
+app.run_polling()
